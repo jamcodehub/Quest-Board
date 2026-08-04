@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar.jsx';
+import Shell from './components/Shell.jsx';
 import GhostDialogue from './components/GhostDialogue.jsx';
 
-// --- HOME / STUDENT VIEW COMPONENT ---
-function StudentPortal() {
+// --- QUESTS CHECKLIST VIEW COMPONENT ---
+function QuestsPortal() {
   const [code, setCode] = useState('');
   const [activeQuests, setActiveQuests] = useState(null);
   const [error, setError] = useState('');
 
-  // Check for an existing session when the component loads
   useEffect(() => {
     const savedCode = localStorage.getItem('activeQuestCode');
     if (savedCode) {
@@ -20,7 +19,7 @@ function StudentPortal() {
   const fetchQuests = async (questCode) => {
     setError('');
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000';
       const response = await fetch(`${API_BASE_URL}/api/quests/${questCode}`);
       
       if (response.ok) {
@@ -28,12 +27,12 @@ function StudentPortal() {
         setActiveQuests(data);
         localStorage.setItem('activeQuestCode', questCode);
       } else {
-        setError('Invalid Quest Code. Speak to the Guild Master.');
+        setError('Invalid quest code. Please verify with your instructor.');
         localStorage.removeItem('activeQuestCode');
       }
     } catch (err) {
       console.error('Network error', err);
-      setError('Network error. Is the server running?');
+      setError('Unable to connect to server.');
     }
   };
 
@@ -49,36 +48,38 @@ function StudentPortal() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 w-full flex-grow">
+    <div className="flex flex-col items-center justify-center p-6 w-full flex-grow">
       {!activeQuests ? (
-        <div className="flex flex-col items-center w-full max-w-sm mt-12">
-          <h1 className="text-3xl mb-8 font-bold text-slate-100">Enter Quest Code</h1>
-          <form onSubmit={handleLogin} className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col items-center w-full max-w-sm bg-slate-900/60 p-6 rounded-lg border border-slate-800 shadow-lg">
+          <h1 className="text-lg font-semibold text-slate-100 mb-1">Enter Quest Code</h1>
+          <p className="text-xs text-slate-400 mb-6 text-center">Input your assigned code to load your active checklist.</p>
+          <form onSubmit={handleLogin} className="flex flex-col gap-3 w-full">
             <input 
               type="text" 
               placeholder="e.g. crimson-dragon-42"
-              className="p-3 text-black rounded border-2 border-slate-600 focus:outline-none focus:border-purple-500 transition-colors"
+              className="p-2.5 text-xs text-slate-900 rounded border border-slate-700 focus:outline-none focus:border-slate-500 bg-slate-100 font-mono"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
             />
             <button 
               type="submit" 
-              className="bg-purple-600 text-white font-semibold p-3 rounded hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-medium py-2.5 rounded transition-colors border border-slate-700"
             >
-              Reveal Quests
+              Load Quests
             </button>
-            {error && <p className="text-red-400 text-center font-medium mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-center text-xs font-medium mt-1">{error}</p>}
           </form>
         </div>
       ) : (
-        <div className="w-full max-w-2xl flex flex-col mt-6">
-          <div className="w-full flex justify-end mb-4">
+        <div className="w-full max-w-2xl flex flex-col mt-4">
+          <div className="w-full flex justify-between items-center mb-4 px-2">
+            <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">Active Checklist</h2>
             <button 
               onClick={logout} 
-              className="text-sm underline text-slate-400 hover:text-white transition-colors"
+              className="text-xs text-slate-400 hover:text-slate-200 transition-colors underline"
             >
-              Clear Session
+              Switch Code
             </button>
           </div>
           <GhostDialogue quests={activeQuests} />
@@ -88,7 +89,7 @@ function StudentPortal() {
   );
 }
 
-// --- ADMIN VIEW COMPONENT ---
+// --- ADMIN PORTAL COMPONENT ---
 function AdminPortal() {
   const [adminPassword, setAdminPassword] = useState('');
   const [tasksInput, setTasksInput] = useState('');
@@ -100,7 +101,6 @@ function AdminPortal() {
     setStatusMessage('');
     setGeneratedCode('');
 
-    // Split textarea lines into an array of task strings
     const tasksArray = tasksInput
       .split('\n')
       .map(t => t.trim())
@@ -112,7 +112,7 @@ function AdminPortal() {
     }
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000';
       const response = await fetch(`${API_BASE_URL}/api/admin/quests`, {
         method: 'POST',
         headers: {
@@ -126,10 +126,10 @@ function AdminPortal() {
 
       if (response.ok) {
         setGeneratedCode(data.questCode);
-        setStatusMessage('Quest Board successfully created!');
+        setStatusMessage('Quest board successfully created.');
         setTasksInput('');
       } else {
-        setStatusMessage(data.message || 'Authorization failed or error creating quests.');
+        setStatusMessage(data.message || 'Authorization failed.');
       }
     } catch (err) {
       console.error(err);
@@ -138,15 +138,15 @@ function AdminPortal() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 w-full flex-grow">
-      <div className="flex flex-col items-center w-full max-w-md mt-8 bg-slate-800/50 p-6 rounded-xl border border-slate-700 shadow-xl backdrop-blur-md">
-        <h1 className="text-2xl mb-6 font-bold text-slate-100">Guild Master Portal</h1>
-        <form onSubmit={handleCreateQuests} className="flex flex-col gap-4 w-full">
+    <div className="flex flex-col items-center justify-center p-6 w-full flex-grow">
+      <div className="flex flex-col items-center w-full max-w-md bg-slate-900/60 p-6 rounded-lg border border-slate-800 shadow-lg">
+        <h1 className="text-lg font-semibold text-slate-100 mb-6">Guild Master Portal</h1>
+        <form onSubmit={handleCreateQuests} className="flex flex-col gap-4 w-full text-xs">
           <div>
-            <label className="block text-xs uppercase tracking-wider text-slate-400 mb-1">Admin Password</label>
+            <label className="block uppercase tracking-wider text-slate-400 mb-1 font-medium">Admin Password</label>
             <input 
               type="password"
-              className="w-full p-3 text-black rounded border border-slate-600 focus:outline-none focus:border-purple-500"
+              className="w-full p-2.5 text-slate-900 rounded border border-slate-700 focus:outline-none focus:border-slate-500 bg-slate-100"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
               required
@@ -154,11 +154,11 @@ function AdminPortal() {
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider text-slate-400 mb-1">Tasks (One per line)</label>
+            <label className="block uppercase tracking-wider text-slate-400 mb-1 font-medium">Tasks (One per line)</label>
             <textarea 
               rows="5"
-              placeholder="Read Chapter 4&#10;Build a React component&#10;Defeat the goblin boss"
-              className="w-full p-3 text-black rounded border border-slate-600 focus:outline-none focus:border-purple-500 font-mono text-sm"
+              placeholder="Complete Module 1 Quiz&#10;Submit GitHub repository link&#10;Review error handling code"
+              className="w-full p-2.5 text-slate-900 rounded border border-slate-700 focus:outline-none focus:border-slate-500 font-mono bg-slate-100 text-xs"
               value={tasksInput}
               onChange={(e) => setTasksInput(e.target.value)}
               required
@@ -167,25 +167,35 @@ function AdminPortal() {
 
           <button 
             type="submit" 
-            className="bg-purple-600 text-white font-semibold p-3 rounded hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium py-2.5 rounded transition-colors border border-slate-700 mt-1"
           >
-            Generate Quest Board
+            Generate Quest Code
           </button>
         </form>
 
         {statusMessage && (
-          <p className={`mt-4 text-center font-medium ${generatedCode ? 'text-green-400' : 'text-red-400'}`}>
+          <p className={`mt-4 text-center text-xs font-medium ${generatedCode ? 'text-emerald-400' : 'text-red-400'}`}>
             {statusMessage}
           </p>
         )}
 
         {generatedCode && (
-          <div className="mt-4 p-4 bg-slate-900 rounded border border-purple-500/50 w-full text-center">
-            <span className="text-xs text-slate-400 block mb-1">ASSIGNED QUEST CODE:</span>
-            <span className="font-mono text-xl text-purple-300 font-bold select-all">{generatedCode}</span>
+          <div className="mt-4 p-3 bg-slate-950 rounded border border-slate-800 w-full text-center">
+            <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Generated Code</span>
+            <span className="font-mono text-sm text-slate-200 font-semibold select-all">{generatedCode}</span>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// --- PLACEHOLDER PAGES ---
+function PlaceholderPage({ title }) {
+  return (
+    <div className="p-8">
+      <h2 className="text-lg font-semibold text-slate-200 mb-1">{title}</h2>
+      <p className="text-xs text-slate-400">This section is currently empty.</p>
     </div>
   );
 }
@@ -194,13 +204,14 @@ function AdminPortal() {
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col font-sans">
-        <Navbar />
+      <Shell>
         <Routes>
-          <Route path="/" element={<StudentPortal />} />
+          <Route path="/" element={<QuestsPortal />} />
+          <Route path="/character" element={<PlaceholderPage title="Character & Stats" />} />
+          <Route path="/notepages" element={<PlaceholderPage title="Notepages" />} />
           <Route path="/admin" element={<AdminPortal />} />
         </Routes>
-      </div>
+      </Shell>
     </Router>
   );
 }
