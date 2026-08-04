@@ -1,17 +1,20 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import QuestLog from './models/QuestLog.js';
 import { verifyAdmin } from './middleware/auth.js';
 
-dotenv.config();
 const app = express();
 
-app.use(cors());
+// Strictly production CORS (no localhost fallback)
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
+
 app.use(express.json());
 
-// Connect to MongoDB
+// Connect to MongoDB using the production environment variable
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Failed to connect', err));
@@ -91,5 +94,3 @@ app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
     res.status(500).json({ message: 'Server error while creating quests' });
   }
 });
-
-app.listen(3000, () => console.log('Server running on port 3000'));
