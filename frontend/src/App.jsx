@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
-import { GhostDialogue } from './components/GhostDialogue.jsx';
+import GhostDialogue from './components/GhostDialogue.jsx';
 
 // --- HOME / STUDENT VIEW COMPONENT ---
 function StudentPortal() {
