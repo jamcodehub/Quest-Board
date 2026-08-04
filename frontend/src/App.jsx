@@ -3,7 +3,82 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Shell from './components/Shell.jsx';
 import GhostDialogue from './components/GhostDialogue.jsx';
 
-// --- QUESTS CHECKLIST VIEW COMPONENT ---
+// ─── SHARED STYLES ───────────────────────────────────────────────────────────
+const s = {
+  pageWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    padding: '40px 48px',
+    maxWidth: 720,
+  },
+  pageTitle: {
+    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontSize: 22,
+    fontWeight: 700,
+    color: '#2C2416',
+    marginBottom: 6,
+    letterSpacing: '0.01em',
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    color: '#8B7355',
+    marginBottom: 32,
+  },
+  card: {
+    background: '#FFFFFF',
+    border: '1px solid #E8E3D8',
+    borderRadius: 8,
+    padding: '28px 28px',
+    maxWidth: 420,
+  },
+  label: {
+    display: 'block',
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    color: '#A89070',
+    marginBottom: 6,
+  },
+  input: {
+    width: '100%',
+    padding: '9px 12px',
+    fontSize: 13,
+    border: '1px solid #DDD7CC',
+    borderRadius: 6,
+    outline: 'none',
+    background: '#FAFAF7',
+    color: '#2C2416',
+    fontFamily: 'inherit',
+    transition: 'border-color 0.15s',
+  },
+  btn: {
+    display: 'inline-block',
+    padding: '9px 20px',
+    background: '#7D6340',
+    color: '#FFFDF9',
+    fontSize: 12,
+    fontWeight: 600,
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+    letterSpacing: '0.03em',
+    transition: 'background 0.15s',
+  },
+  errorText: {
+    fontSize: 11,
+    color: '#B85C38',
+    marginTop: 8,
+  },
+  successText: {
+    fontSize: 11,
+    color: '#4A7C59',
+    marginTop: 8,
+  },
+};
+
+// ─── QUESTS PORTAL ───────────────────────────────────────────────────────────
 function QuestsPortal() {
   const [code, setCode] = useState('');
   const [activeQuests, setActiveQuests] = useState(null);
@@ -11,9 +86,7 @@ function QuestsPortal() {
 
   useEffect(() => {
     const savedCode = localStorage.getItem('activeQuestCode');
-    if (savedCode) {
-      fetchQuests(savedCode);
-    }
+    if (savedCode) fetchQuests(savedCode);
   }, []);
 
   const fetchQuests = async (questCode) => {
@@ -21,17 +94,15 @@ function QuestsPortal() {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000';
       const response = await fetch(`${API_BASE_URL}/api/quests/${questCode}`);
-      
       if (response.ok) {
         const data = await response.json();
         setActiveQuests(data);
         localStorage.setItem('activeQuestCode', questCode);
       } else {
-        setError('Invalid quest code. Please verify with your instructor.');
+        setError('Invalid quest code. Verify with your instructor.');
         localStorage.removeItem('activeQuestCode');
       }
-    } catch (err) {
-      console.error('Network error', err);
+    } catch {
       setError('Unable to connect to server.');
     }
   };
@@ -47,65 +118,76 @@ function QuestsPortal() {
     setCode('');
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center p-6 w-full flex-grow">
-      {!activeQuests ? (
-        <div className="flex flex-col items-center w-full max-w-sm bg-slate-900/60 p-6 rounded-lg border border-slate-800 shadow-lg">
-          <h1 className="text-lg font-semibold text-slate-100 mb-1">Enter Quest Code</h1>
-          <p className="text-xs text-slate-400 mb-6 text-center">Input your assigned code to load your active checklist.</p>
-          <form onSubmit={handleLogin} className="flex flex-col gap-3 w-full">
-            <input 
-              type="text" 
+  if (!activeQuests) {
+    return (
+      <div style={s.pageWrap}>
+        <div style={s.pageTitle}>Quests</div>
+        <div style={s.pageSubtitle}>Enter your quest code to load your active checklist.</div>
+        <div style={s.card}>
+          <form onSubmit={handleLogin}>
+            <label style={s.label}>Quest Code</label>
+            <input
+              style={s.input}
+              type="text"
               placeholder="e.g. crimson-dragon-42"
-              className="p-2.5 text-xs text-slate-900 rounded border border-slate-700 focus:outline-none focus:border-slate-500 bg-slate-100 font-mono"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
             />
-            <button 
-              type="submit" 
-              className="bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-medium py-2.5 rounded transition-colors border border-slate-700"
+            {error && <div style={s.errorText}>{error}</div>}
+            <button
+              type="submit"
+              style={{ ...s.btn, marginTop: 16, width: '100%', textAlign: 'center' }}
+              onMouseEnter={e => e.target.style.background = '#6B5232'}
+              onMouseLeave={e => e.target.style.background = '#7D6340'}
             >
               Load Quests
             </button>
-            {error && <p className="text-red-400 text-center text-xs font-medium mt-1">{error}</p>}
           </form>
         </div>
-      ) : (
-        <div className="w-full max-w-2xl flex flex-col mt-4">
-          <div className="w-full flex justify-between items-center mb-4 px-2">
-            <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">Active Checklist</h2>
-            <button 
-              onClick={logout} 
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors underline"
-            >
-              Switch Code
-            </button>
-          </div>
-          <GhostDialogue quests={activeQuests} />
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...s.pageWrap, maxWidth: 800 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24 }}>
+        <div style={s.pageTitle}>Active Quests</div>
+        <button
+          onClick={logout}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: 11,
+            color: '#A89070',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            fontFamily: 'inherit',
+          }}
+        >
+          Switch Code
+        </button>
+      </div>
+      <GhostDialogue quests={activeQuests} />
     </div>
   );
 }
 
-// --- ADMIN PORTAL COMPONENT ---
+// ─── ADMIN PORTAL ─────────────────────────────────────────────────────────────
 function AdminPortal() {
   const [adminPassword, setAdminPassword] = useState('');
   const [tasksInput, setTasksInput] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleCreateQuests = async (e) => {
     e.preventDefault();
     setStatusMessage('');
     setGeneratedCode('');
+    setIsSuccess(false);
 
-    const tasksArray = tasksInput
-      .split('\n')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
+    const tasksArray = tasksInput.split('\n').map(t => t.trim()).filter(t => t.length > 0);
     if (tasksArray.length === 0) {
       setStatusMessage('Please enter at least one task.');
       return;
@@ -117,72 +199,95 @@ function AdminPortal() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': adminPassword
+          'x-admin-password': adminPassword,
         },
-        body: JSON.stringify({ tasks: tasksArray })
+        body: JSON.stringify({ tasks: tasksArray }),
       });
 
       const data = await response.json();
-
       if (response.ok) {
         setGeneratedCode(data.questCode);
-        setStatusMessage('Quest board successfully created.');
+        setStatusMessage('Quest board created successfully.');
+        setIsSuccess(true);
         setTasksInput('');
       } else {
         setStatusMessage(data.message || 'Authorization failed.');
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setStatusMessage('Network error connecting to backend.');
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 w-full flex-grow">
-      <div className="flex flex-col items-center w-full max-w-md bg-slate-900/60 p-6 rounded-lg border border-slate-800 shadow-lg">
-        <h1 className="text-lg font-semibold text-slate-100 mb-6">Guild Master Portal</h1>
-        <form onSubmit={handleCreateQuests} className="flex flex-col gap-4 w-full text-xs">
-          <div>
-            <label className="block uppercase tracking-wider text-slate-400 mb-1 font-medium">Admin Password</label>
-            <input 
+    <div style={s.pageWrap}>
+      <div style={s.pageTitle}>Guild Master Portal</div>
+      <div style={s.pageSubtitle}>Create a new quest board and generate a code for your students.</div>
+
+      <div style={{ ...s.card, maxWidth: 480 }}>
+        <form onSubmit={handleCreateQuests}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={s.label}>Admin Password</label>
+            <input
+              style={s.input}
               type="password"
-              className="w-full p-2.5 text-slate-900 rounded border border-slate-700 focus:outline-none focus:border-slate-500 bg-slate-100"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
               required
             />
           </div>
 
-          <div>
-            <label className="block uppercase tracking-wider text-slate-400 mb-1 font-medium">Tasks (One per line)</label>
-            <textarea 
-              rows="5"
-              placeholder="Complete Module 1 Quiz&#10;Submit GitHub repository link&#10;Review error handling code"
-              className="w-full p-2.5 text-slate-900 rounded border border-slate-700 focus:outline-none focus:border-slate-500 font-mono bg-slate-100 text-xs"
+          <div style={{ marginBottom: 20 }}>
+            <label style={s.label}>Tasks (one per line)</label>
+            <textarea
+              rows={5}
+              placeholder={"Complete Module 1 Quiz\nSubmit GitHub repository link\nReview error handling code"}
+              style={{
+                ...s.input,
+                resize: 'vertical',
+                fontFamily: '"SF Mono", "Fira Code", monospace',
+                lineHeight: 1.6,
+              }}
               value={tasksInput}
               onChange={(e) => setTasksInput(e.target.value)}
               required
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium py-2.5 rounded transition-colors border border-slate-700 mt-1"
+          <button
+            type="submit"
+            style={{ ...s.btn, width: '100%', textAlign: 'center' }}
+            onMouseEnter={e => e.target.style.background = '#6B5232'}
+            onMouseLeave={e => e.target.style.background = '#7D6340'}
           >
             Generate Quest Code
           </button>
         </form>
 
         {statusMessage && (
-          <p className={`mt-4 text-center text-xs font-medium ${generatedCode ? 'text-emerald-400' : 'text-red-400'}`}>
-            {statusMessage}
-          </p>
+          <div style={isSuccess ? s.successText : s.errorText}>{statusMessage}</div>
         )}
 
         {generatedCode && (
-          <div className="mt-4 p-3 bg-slate-950 rounded border border-slate-800 w-full text-center">
-            <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Generated Code</span>
-            <span className="font-mono text-sm text-slate-200 font-semibold select-all">{generatedCode}</span>
+          <div style={{
+            marginTop: 20,
+            padding: '14px 16px',
+            background: '#F5F2EA',
+            border: '1px solid #E0D9CC',
+            borderRadius: 6,
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#A89070', marginBottom: 6 }}>
+              Generated Code
+            </div>
+            <div style={{
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              fontSize: 16,
+              fontWeight: 700,
+              color: '#2C2416',
+              userSelect: 'all',
+            }}>
+              {generatedCode}
+            </div>
           </div>
         )}
       </div>
@@ -190,17 +295,17 @@ function AdminPortal() {
   );
 }
 
-// --- PLACEHOLDER PAGES ---
+// ─── PLACEHOLDER ──────────────────────────────────────────────────────────────
 function PlaceholderPage({ title }) {
   return (
-    <div className="p-8">
-      <h2 className="text-lg font-semibold text-slate-200 mb-1">{title}</h2>
-      <p className="text-xs text-slate-400">This section is currently empty.</p>
+    <div style={s.pageWrap}>
+      <div style={s.pageTitle}>{title}</div>
+      <div style={s.pageSubtitle}>This section is currently empty.</div>
     </div>
   );
 }
 
-// --- MAIN APP WRAPPER ---
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <Router>

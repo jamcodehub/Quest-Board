@@ -12,97 +12,294 @@ export default function Shell({ children }) {
   ];
 
   return (
-    <div className="flex h-screen bg-[#07090e] text-slate-100 overflow-hidden font-sans">
-      
+    <div style={styles.root}>
+
       {/* --- MOBILE TOP BAR --- */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#0b0f19] border-b border-slate-800 flex items-center justify-between px-4 z-50">
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-400 hover:text-white focus:outline-none"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
-          <span className="font-semibold tracking-wider text-slate-200 text-sm">QUEST BOARD</span>
-        </div>
-        <span className="text-xs px-2 py-1 bg-slate-800 text-slate-300 rounded font-mono">Online</span>
+      <div style={styles.mobileTopBar} className="mobile-only">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={styles.hamburger}
+        >
+          {mobileMenuOpen ? '✕' : '☰'}
+        </button>
+        <span style={styles.mobileBrand}>Quest Board</span>
+        <span />
       </div>
 
-      {/* --- SIDEBAR NAVIGATION --- */}
-      <aside className={`
-        fixed md:static inset-y-0 left-0 z-40 w-64 bg-[#0b0f19] border-r border-slate-800/80 
-        flex flex-col justify-between transform transition-transform duration-200 ease-in-out
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        pt-16 md:pt-0
-      `}>
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="mb-8">
-            <h1 className="text-sm font-semibold tracking-widest text-slate-200 uppercase">Quest Board</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Progress & Task Tracker</p>
-          </div>
+      {/* --- SIDEBAR --- */}
+      <aside style={{
+        ...styles.sidebar,
+        transform: mobileMenuOpen ? 'translateX(0)' : undefined,
+      }} className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
 
-          {/* Player Stats Summary */}
-          <div className="mb-6 p-3.5 bg-slate-900/60 rounded-lg border border-slate-800/80 space-y-2">
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Session Status</div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">Gold Earned</span>
-              <span className="font-mono font-semibold text-slate-200">120</span>
-            </div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">Experience</span>
-              <span className="font-mono font-semibold text-slate-200">450 / 600</span>
-            </div>
-          </div>
-
-          <nav className="space-y-1.5">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) => `
-                  flex items-center px-3 py-2 rounded-md text-xs font-medium transition-colors
-                  ${isActive 
-                    ? 'bg-slate-800 text-slate-100 font-semibold' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'}
-                `}
-              >
-                {item.name}
-              </NavLink>
-            ))}
-          </nav>
+        {/* Brand */}
+        <div style={styles.brandBlock}>
+          <div style={styles.brandTitle}>Quest Board</div>
+          <div style={styles.brandSub}>Progress &amp; Task Tracker</div>
         </div>
 
-        {/* Footer with Subtle Hidden Admin Button */}
-        <div className="p-4 border-t border-slate-800/80 bg-[#090c14] flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-mono">v1.2.0</span>
-          <button 
+        <hr style={styles.divider} />
+
+        {/* Campaign-style meta block */}
+        <div style={styles.metaBlock}>
+          <div style={styles.metaLabel}>SESSION</div>
+          <div style={styles.campaignName}>Active Session</div>
+          <div style={styles.metaRow}>
+            <span style={styles.metaKey}>Gold Earned</span>
+            <span style={styles.metaVal}>120</span>
+          </div>
+          <div style={styles.metaRow}>
+            <span style={styles.metaKey}>Experience</span>
+            <span style={styles.metaVal}>450 / 600</span>
+          </div>
+        </div>
+
+        <hr style={styles.divider} />
+
+        {/* Nav */}
+        <nav style={styles.nav}>
+          {navItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              onClick={() => setMobileMenuOpen(false)}
+              style={({ isActive }) => ({
+                ...styles.navLink,
+                ...(isActive ? styles.navLinkActive : {}),
+              })}
+            >
+              {item.name}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Hidden Guild Master — ultra-subtle, bottom of sidebar */}
+        <div style={styles.sidebarFooter}>
+          <span style={styles.version}>v1.2.0</span>
+          <button
             onClick={() => {
               setMobileMenuOpen(false);
               navigate('/admin');
             }}
-            className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-900"
+            style={styles.guildMasterBtn}
             title="Guild Master Portal"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span className="text-[11px] tracking-wide">Guild Master</span>
+            guild master
           </button>
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 flex flex-col h-full overflow-y-auto bg-[#07090e] pt-16 md:pt-0">
-        {children}
+      {/* Overlay for mobile */}
+      {mobileMenuOpen && (
+        <div
+          style={styles.overlay}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* --- MAIN CONTENT --- */}
+      <main style={styles.main}>
+        <div style={styles.mainInner}>
+          {children}
+        </div>
       </main>
 
+      <style>{`
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #FAFAF7; }
+
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed !important;
+            top: 0; left: 0; bottom: 0;
+            transform: translateX(-100%) !important;
+            z-index: 50;
+            transition: transform 0.2s ease;
+          }
+          .sidebar.open {
+            transform: translateX(0) !important;
+          }
+          .mobile-only {
+            display: flex !important;
+          }
+          .main-desktop-pad {
+            padding-top: 56px !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .mobile-only { display: none !important; }
+          .sidebar { transform: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
+
+const styles = {
+  root: {
+    display: 'flex',
+    height: '100vh',
+    background: '#FAFAF7',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    overflow: 'hidden',
+  },
+  mobileTopBar: {
+    display: 'none',
+    position: 'fixed',
+    top: 0, left: 0, right: 0,
+    height: 56,
+    background: '#F5F2EA',
+    borderBottom: '1px solid #E0D9CC',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 16px',
+    zIndex: 60,
+  },
+  hamburger: {
+    background: 'none',
+    border: 'none',
+    fontSize: 18,
+    color: '#5C4A2A',
+    cursor: 'pointer',
+    padding: '4px 8px',
+  },
+  mobileBrand: {
+    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontWeight: 700,
+    fontSize: 16,
+    color: '#2C2416',
+    letterSpacing: '0.02em',
+  },
+  sidebar: {
+    width: 240,
+    minWidth: 240,
+    background: 'linear-gradient(180deg, #F5F2EA 0%, #F0EBE0 100%)',
+    borderRight: '1px solid #E0D9CC',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    overflowY: 'auto',
+    flexShrink: 0,
+  },
+  brandBlock: {
+    padding: '28px 20px 20px',
+  },
+  brandTitle: {
+    fontFamily: 'Georgia, "Times New Roman", serif',
+    fontWeight: 700,
+    fontSize: 20,
+    color: '#2C2416',
+    letterSpacing: '0.01em',
+    marginBottom: 4,
+  },
+  brandSub: {
+    fontSize: 11,
+    color: '#8B7355',
+    letterSpacing: '0.02em',
+  },
+  divider: {
+    border: 'none',
+    borderTop: '1px solid #E0D9CC',
+    margin: '0 20px',
+  },
+  metaBlock: {
+    padding: '16px 20px',
+  },
+  metaLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    color: '#A89070',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  campaignName: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#3D2E14',
+    marginBottom: 10,
+  },
+  metaRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  metaKey: {
+    fontSize: 11,
+    color: '#8B7355',
+  },
+  metaVal: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#3D2E14',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  nav: {
+    padding: '12px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  navLink: {
+    display: 'block',
+    padding: '8px 10px',
+    borderRadius: 6,
+    fontSize: 13,
+    color: '#5C4A2A',
+    textDecoration: 'none',
+    fontWeight: 400,
+    transition: 'background 0.15s, color 0.15s',
+  },
+  navLinkActive: {
+    background: '#EDE7D9',
+    color: '#2C2416',
+    fontWeight: 600,
+  },
+  sidebarFooter: {
+    padding: '12px 20px 20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTop: '1px solid #E0D9CC',
+  },
+  version: {
+    fontSize: 10,
+    color: '#C5BFB0',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  // Ultra-subtle — nearly invisible unless you look for it
+  guildMasterBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: 10,
+    color: '#C8C2B6',
+    cursor: 'pointer',
+    padding: '2px 4px',
+    letterSpacing: '0.04em',
+    fontFamily: 'inherit',
+    transition: 'color 0.2s',
+  },
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.3)',
+    zIndex: 40,
+  },
+  main: {
+    flex: 1,
+    overflowY: 'auto',
+    background: '#FAFAF7',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  mainInner: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    maxWidth: '100%',
+  },
+};
