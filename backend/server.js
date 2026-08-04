@@ -1,20 +1,18 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import QuestLog from './models/QuestLog.js';
-import { verifyAdmin } from './middleware/auth.js';
+import verifyAdmin from './middleware/auth.js';
 
-dotenv.config();
+const PORT = process.env.PORT || 10000;
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: 'https://quest-boards.netlify.app',
+  credentials: true
+}));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Failed to connect', err));
+app.use(express.json());
 
 // API Route: Fetch quests by code
 app.get('/api/quests/:code', async (req, res) => {
@@ -43,35 +41,29 @@ const generateQuestCode = () => {
 // POST Route: Protected by verifyAdmin
 app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
   try {
-    // Expecting an array of strings in the request body
-    // Example: { "tasks": ["Read Chapter 4", "Build a React component"] }
     const { tasks } = req.body; 
 
     if (!tasks || !Array.isArray(tasks)) {
       return res.status(400).json({ message: 'Please provide an array of tasks.' });
     }
 
-    // Format the simple strings into our MongoDB schema structure
     const formattedQuests = tasks.map(title => ({
       title: title,
       status: 'pending'
     }));
 
-    // Generate a unique code
     let code = generateQuestCode();
     
-    // Ensure the code is strictly unique in the database
     let isUnique = false;
     while (!isUnique) {
       const existing = await QuestLog.findOne({ questCode: code });
       if (existing) {
-        code = generateQuestCode(); // Reroll if it exists
+        code = generateQuestCode();
       } else {
         isUnique = true;
       }
     }
 
-    // Save to MongoDB
     const newStudentLog = new QuestLog({
       questCode: code,
       quests: formattedQuests
@@ -79,7 +71,6 @@ app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
 
     await newStudentLog.save();
 
-    // Return the generated code so you can hand it to the student
     res.status(201).json({ 
       message: 'Quest Board successfully created!', 
       questCode: code,
@@ -92,4 +83,15 @@ app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+// Connect to MongoDB first, then spin up the server on '0.0.0.0' for Render .
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('Connected to MongoDB');
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to MongoDB', err);
+    process.exit(1);
+  });
