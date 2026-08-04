@@ -5,19 +5,15 @@ import QuestLog from './models/QuestLog.js';
 import verifyAdmin from './middleware/auth.js';
 
 const app = express();
+const PORT = process.env.PORT || 10000;
 
-// Strictly production CORS (no localhost fallback) . test
+// Strictly production CORS (no localhost fallback)
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
 app.use(express.json());
-
-// Connect to MongoDB using the production environment variable
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Failed to connect', err));
 
 // API Route: Fetch quests by code
 app.get('/api/quests/:code', async (req, res) => {
@@ -47,7 +43,6 @@ const generateQuestCode = () => {
 app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
   try {
     // Expecting an array of strings in the request body
-    // Example: { "tasks": ["Read Chapter 4", "Build a React component"] }
     const { tasks } = req.body; 
 
     if (!tasks || !Array.isArray(tasks)) {
@@ -94,3 +89,16 @@ app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
     res.status(500).json({ message: 'Server error while creating quests' });
   }
 });
+
+// Connect to MongoDB first, then spin up the server on '0.0.0.0' for Render
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('Connected to MongoDB');
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to MongoDB', err);
+    process.exit(1);
+  });
