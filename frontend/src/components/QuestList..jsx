@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function GhostDialogue({ quests }) {
+export default function QuestList({ quests }) {
   const [checked, setChecked] = useState({});
 
   if (!quests) return null;
