@@ -2,7 +2,7 @@ import React, { useState } from 'react'; // typo fix
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:10000';
 
-export default function GhostDialogue({ quests: initialData, questCode, onProgressUpdate }) {
+export default function QuestList({ quests: initialData, questCode, onProgressUpdate }) {
   const [quests, setQuests] = useState(initialData?.quests || []);
   const [pendingId, setPendingId] = useState(null);
   const [toast, setToast] = useState(null);
