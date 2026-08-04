@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Shell from './components/Shell.jsx';
-import QuestList from './components/QuestList.jsx';
+import QuestList from './components/QuestList.jsx'; // typo fix
 import Character from './pages/Character.jsx';
 import Shop from './pages/Shop.jsx';
 

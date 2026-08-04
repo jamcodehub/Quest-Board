@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; // typo fix
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:10000';
 
