@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import QuestLog from './models/QuestLog.js';
-import { verifyAdmin } from './middleware/auth.js';
+import verifyAdmin from './middleware/auth.js';
 
 const app = express();
 
