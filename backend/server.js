@@ -4,12 +4,11 @@ import cors from 'cors';
 import QuestLog from './models/QuestLog.js';
 import verifyAdmin from './middleware/auth.js';
 
-const app = express();
 const PORT = process.env.PORT || 10000;
+const app = express();
 
-// Strictly production CORS (no localhost fallback)
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: 'https://quest-boards.netlify.app',
   credentials: true
 }));
 
@@ -42,34 +41,29 @@ const generateQuestCode = () => {
 // POST Route: Protected by verifyAdmin
 app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
   try {
-    // Expecting an array of strings in the request body
     const { tasks } = req.body; 
 
     if (!tasks || !Array.isArray(tasks)) {
       return res.status(400).json({ message: 'Please provide an array of tasks.' });
     }
 
-    // Format the simple strings into our MongoDB schema structure
     const formattedQuests = tasks.map(title => ({
       title: title,
       status: 'pending'
     }));
 
-    // Generate a unique code
     let code = generateQuestCode();
     
-    // Ensure the code is strictly unique in the database
     let isUnique = false;
     while (!isUnique) {
       const existing = await QuestLog.findOne({ questCode: code });
       if (existing) {
-        code = generateQuestCode(); // Reroll if it exists
+        code = generateQuestCode();
       } else {
         isUnique = true;
       }
     }
 
-    // Save to MongoDB
     const newStudentLog = new QuestLog({
       questCode: code,
       quests: formattedQuests
@@ -77,7 +71,6 @@ app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
 
     await newStudentLog.save();
 
-    // Return the generated code so you can hand it to the student
     res.status(201).json({ 
       message: 'Quest Board successfully created!', 
       questCode: code,
