@@ -83,7 +83,7 @@ app.post('/api/admin/quests', verifyAdmin, async (req, res) => {
   }
 });
 
-// Connect to MongoDB first, then spin up the server on '0.0.0.0' for Render
+// Connect to MongoDB first, then spin up the server on '0.0.0.0' for Render .
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('Connected to MongoDB');
