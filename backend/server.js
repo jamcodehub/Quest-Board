@@ -6,7 +6,7 @@ import { verifyAdmin } from './middleware/auth.js';
 
 const app = express();
 
-// Strictly production CORS (no localhost fallback)
+// Strictly production CORS (no localhost fallback) .
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
