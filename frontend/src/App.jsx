@@ -1,188 +1,244 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar.jsx';
-import GhostDialogue from './components/GhostDialogue.jsx';
+import Shell from './components/Shell.jsx';
+import QuestList from './components/QuestList.jsx'; // typo fix
+import Character from './pages/Character.jsx';
+import Shop from './pages/Shop.jsx';
 
-// --- HOME / STUDENT VIEW COMPONENT ---
-function StudentPortal() {
+const API = import.meta.env.VITE_API_URL || 'http://localhost:10000';
+
+// ─── QUESTS PORTAL ─────────────────────────────────────────────────────────────
+function QuestsPortal() {
   const [code, setCode] = useState('');
-  const [activeQuests, setActiveQuests] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
 
-  // Check for an existing session when the component loads
   useEffect(() => {
-    const savedCode = localStorage.getItem('activeQuestCode');
-    if (savedCode) {
-      fetchQuests(savedCode);
-    }
+    const saved = localStorage.getItem('activeQuestCode');
+    if (saved) fetchProfile(saved);
   }, []);
 
-  const fetchQuests = async (questCode) => {
+  const fetchProfile = async (questCode) => {
     setError('');
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${API_BASE_URL}/api/quests/${questCode}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setActiveQuests(data);
+      const res = await fetch(`${API}/api/quests/${questCode}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
         localStorage.setItem('activeQuestCode', questCode);
       } else {
-        setError('Invalid Quest Code. Speak to the Guild Master.');
+        setError('Invalid quest code. Verify with your instructor.');
         localStorage.removeItem('activeQuestCode');
       }
-    } catch (err) {
-      console.error('Network error', err);
-      setError('Network error. Is the server running?');
+    } catch {
+      setError('Unable to connect to server.');
     }
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    fetchQuests(code);
+    fetchProfile(code);
   };
 
   const logout = () => {
     localStorage.removeItem('activeQuestCode');
-    setActiveQuests(null);
+    setProfile(null);
     setCode('');
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center p-4 w-full flex-grow">
-      {!activeQuests ? (
-        <div className="flex flex-col items-center w-full max-w-sm mt-12">
-          <h1 className="text-3xl mb-8 font-bold text-slate-100">Enter Quest Code</h1>
-          <form onSubmit={handleLogin} className="flex flex-col gap-4 w-full">
-            <input 
-              type="text" 
+  // Called by GhostDialogue after a task is completed to refresh stats in sidebar
+  const handleProgressUpdate = useCallback(() => {
+    const saved = localStorage.getItem('activeQuestCode');
+    if (saved) fetchProfile(saved);
+  }, []);
+
+  if (!profile) {
+    return (
+      <div style={s.pageWrap}>
+        <div style={s.pageTitle}>Quests</div>
+        <div style={s.pageSubtitle}>Enter your quest code to load your active checklist.</div>
+        <div style={s.card}>
+          <form onSubmit={handleLogin}>
+            <label style={s.label}>Quest Code</label>
+            <input
+              style={s.input}
+              type="text"
               placeholder="e.g. crimson-dragon-42"
-              className="p-3 text-black rounded border-2 border-slate-600 focus:outline-none focus:border-purple-500 transition-colors"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
             />
-            <button 
-              type="submit" 
-              className="bg-purple-600 text-white font-semibold p-3 rounded hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+            {error && <div style={s.errorText}>{error}</div>}
+            <button
+              type="submit"
+              style={{ ...s.btn, marginTop: 16, width: '100%', textAlign: 'center' }}
             >
-              Reveal Quests
+              Load Quests
             </button>
-            {error && <p className="text-red-400 text-center font-medium mt-2">{error}</p>}
           </form>
         </div>
-      ) : (
-        <div className="w-full max-w-2xl flex flex-col mt-6">
-          <div className="w-full flex justify-end mb-4">
-            <button 
-              onClick={logout} 
-              className="text-sm underline text-slate-400 hover:text-white transition-colors"
-            >
-              Clear Session
-            </button>
-          </div>
-          <GhostDialogue quests={activeQuests} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...s.pageWrap, maxWidth: 800 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <div style={s.pageTitle}>Quests</div>
+        <button onClick={logout} style={s.switchBtn}>Switch Code</button>
+      </div>
+
+      {/* Live stats bar */}
+      <div style={s.statsBar}>
+        <StatPill label="Level" value={profile.level} />
+        <StatPill label="XP" value={`${profile.xp}`} accent />
+        <StatPill label="Gold" value={`${profile.gold}g`} gold />
+        <div style={s.xpMiniBarWrap}>
+          <div style={{
+            ...s.xpMiniBarFill,
+            width: `${Math.min(100, Math.round(((profile.xp - (profile.xpForCurrentLevel || 0)) / ((profile.xpForNextLevel || 200) - (profile.xpForCurrentLevel || 0))) * 100))}%`,
+          }} />
         </div>
-      )}
+      </div>
+
+      <GhostDialogue
+        quests={profile}
+        questCode={profile.questCode}
+        onProgressUpdate={handleProgressUpdate}
+      />
     </div>
   );
 }
 
-// --- ADMIN VIEW COMPONENT ---
+function StatPill({ label, value, accent, gold: isGold }) {
+  return (
+    <div style={{
+      ...s.pill,
+      ...(isGold ? s.pillGold : accent ? s.pillAccent : {}),
+    }}>
+      <span style={s.pillLabel}>{label}</span>
+      <span style={s.pillVal}>{value}</span>
+    </div>
+  );
+}
+
+// ─── ADMIN PORTAL ──────────────────────────────────────────────────────────────
 function AdminPortal() {
   const [adminPassword, setAdminPassword] = useState('');
-  const [tasksInput, setTasksInput] = useState('');
+  const [tasks, setTasks] = useState([{ title: '', xpReward: 50, goldReward: 20 }]);
   const [generatedCode, setGeneratedCode] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleCreateQuests = async (e) => {
+  const addTask = () => setTasks(prev => [...prev, { title: '', xpReward: 50, goldReward: 20 }]);
+  const removeTask = (i) => setTasks(prev => prev.filter((_, idx) => idx !== i));
+  const updateTask = (i, field, val) => setTasks(prev =>
+    prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t)
+  );
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setStatusMessage('');
     setGeneratedCode('');
+    setIsSuccess(false);
 
-    // Split textarea lines into an array of task strings
-    const tasksArray = tasksInput
-      .split('\n')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
-    if (tasksArray.length === 0) {
-      setStatusMessage('Please enter at least one task.');
-      return;
-    }
+    const valid = tasks.filter(t => t.title.trim());
+    if (!valid.length) { setStatusMessage('Add at least one task.'); return; }
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${API_BASE_URL}/api/admin/quests`, {
+      const res = await fetch(`${API}/api/admin/quests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-password': adminPassword
+          'x-admin-password': adminPassword,
         },
-        body: JSON.stringify({ tasks: tasksArray })
+        body: JSON.stringify({ tasks: valid }),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await res.json();
+      if (res.ok) {
         setGeneratedCode(data.questCode);
-        setStatusMessage('Quest Board successfully created!');
-        setTasksInput('');
+        setStatusMessage('Quest board created!');
+        setIsSuccess(true);
+        setTasks([{ title: '', xpReward: 50, goldReward: 20 }]);
       } else {
-        setStatusMessage(data.message || 'Authorization failed or error creating quests.');
+        setStatusMessage(data.message || 'Authorization failed.');
       }
-    } catch (err) {
-      console.error(err);
-      setStatusMessage('Network error connecting to backend.');
+    } catch {
+      setStatusMessage('Network error.');
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 w-full flex-grow">
-      <div className="flex flex-col items-center w-full max-w-md mt-8 bg-slate-800/50 p-6 rounded-xl border border-slate-700 shadow-xl backdrop-blur-md">
-        <h1 className="text-2xl mb-6 font-bold text-slate-100">Guild Master Portal</h1>
-        <form onSubmit={handleCreateQuests} className="flex flex-col gap-4 w-full">
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-slate-400 mb-1">Admin Password</label>
-            <input 
+    <div style={s.pageWrap}>
+      <div style={s.pageTitle}>Guild Master Portal</div>
+      <div style={s.pageSubtitle}>Create quest boards and set XP/Gold rewards per task.</div>
+
+      <div style={{ ...s.card, maxWidth: 560 }}>
+        <form onSubmit={handleSubmit}>
+          {/* Password */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={s.label}>Admin Password</label>
+            <input
+              style={s.input}
               type="password"
-              className="w-full p-3 text-black rounded border border-slate-600 focus:outline-none focus:border-purple-500"
               value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
+              onChange={e => setAdminPassword(e.target.value)}
               required
             />
           </div>
 
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-slate-400 mb-1">Tasks (One per line)</label>
-            <textarea 
-              rows="5"
-              placeholder="Read Chapter 4&#10;Build a React component&#10;Defeat the goblin boss"
-              className="w-full p-3 text-black rounded border border-slate-600 focus:outline-none focus:border-purple-500 font-mono text-sm"
-              value={tasksInput}
-              onChange={(e) => setTasksInput(e.target.value)}
-              required
-            />
+          {/* Tasks */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={s.label}>Tasks & Rewards</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {tasks.map((task, i) => (
+                <div key={i} style={s.taskRow}>
+                  <input
+                    style={{ ...s.input, flex: 1, marginBottom: 0 }}
+                    placeholder={`Task ${i + 1}...`}
+                    value={task.title}
+                    onChange={e => updateTask(i, 'title', e.target.value)}
+                  />
+                  <div style={s.rewardInputs}>
+                    <label style={s.rewardLabel}>XP</label>
+                    <input
+                      style={s.rewardInput}
+                      type="number"
+                      min={0}
+                      value={task.xpReward}
+                      onChange={e => updateTask(i, 'xpReward', Number(e.target.value))}
+                    />
+                    <label style={s.rewardLabel}>Gold</label>
+                    <input
+                      style={s.rewardInput}
+                      type="number"
+                      min={0}
+                      value={task.goldReward}
+                      onChange={e => updateTask(i, 'goldReward', Number(e.target.value))}
+                    />
+                  </div>
+                  {tasks.length > 1 && (
+                    <button type="button" onClick={() => removeTask(i)} style={s.removeBtn}>✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addTask} style={s.addBtn}>+ Add Task</button>
           </div>
 
-          <button 
-            type="submit" 
-            className="bg-purple-600 text-white font-semibold p-3 rounded hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
-          >
-            Generate Quest Board
+          <button type="submit" style={{ ...s.btn, width: '100%', textAlign: 'center' }}>
+            Generate Quest Code
           </button>
         </form>
 
         {statusMessage && (
-          <p className={`mt-4 text-center font-medium ${generatedCode ? 'text-green-400' : 'text-red-400'}`}>
-            {statusMessage}
-          </p>
+          <div style={isSuccess ? s.successText : s.errorText}>{statusMessage}</div>
         )}
 
         {generatedCode && (
-          <div className="mt-4 p-4 bg-slate-900 rounded border border-purple-500/50 w-full text-center">
-            <span className="text-xs text-slate-400 block mb-1">ASSIGNED QUEST CODE:</span>
-            <span className="font-mono text-xl text-purple-300 font-bold select-all">{generatedCode}</span>
+          <div style={s.codeBox}>
+            <div style={s.codeLabel}>Generated Code</div>
+            <div style={s.codeValue}>{generatedCode}</div>
           </div>
         )}
       </div>
@@ -190,17 +246,49 @@ function AdminPortal() {
   );
 }
 
-// --- MAIN APP WRAPPER ---
+// ─── ROOT ──────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col font-sans">
-        <Navbar />
+      <Shell>
         <Routes>
-          <Route path="/" element={<StudentPortal />} />
+          <Route path="/" element={<QuestsPortal />} />
+          <Route path="/character" element={<Character />} />
+          <Route path="/shop" element={<Shop />} />
           <Route path="/admin" element={<AdminPortal />} />
         </Routes>
-      </div>
+      </Shell>
     </Router>
   );
 }
+
+// ─── SHARED STYLES ─────────────────────────────────────────────────────────────
+const s = {
+  pageWrap: { padding: '40px 48px', maxWidth: 720, display: 'flex', flexDirection: 'column' },
+  pageTitle: { fontFamily: 'Georgia, serif', fontSize: 22, fontWeight: 700, color: '#2C2416', marginBottom: 6, letterSpacing: '0.01em' },
+  pageSubtitle: { fontSize: 12, color: '#8B7355', marginBottom: 28 },
+  card: { background: '#FFFFFF', border: '1px solid #E8E3D8', borderRadius: 8, padding: '24px 24px' },
+  label: { display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#A89070', marginBottom: 6 },
+  input: { width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #DDD7CC', borderRadius: 6, outline: 'none', background: '#FAFAF7', color: '#2C2416', fontFamily: 'inherit', boxSizing: 'border-box' },
+  btn: { display: 'inline-block', padding: '9px 20px', background: '#7D6340', color: '#FFFDF9', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6, cursor: 'pointer', letterSpacing: '0.03em' },
+  errorText: { fontSize: 11, color: '#B85C38', marginTop: 10 },
+  successText: { fontSize: 11, color: '#4A7C59', marginTop: 10 },
+  switchBtn: { background: 'none', border: 'none', fontSize: 11, color: '#A89070', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' },
+  statsBar: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, flexWrap: 'wrap' },
+  pill: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 12px', background: '#F5F2EA', border: '1px solid #E8E3D8', borderRadius: 6, minWidth: 52 },
+  pillAccent: { background: '#EDE7D9', borderColor: '#C8C2B6' },
+  pillGold: { background: '#FEF3C7', borderColor: '#F6D860' },
+  pillLabel: { fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#A89070' },
+  pillVal: { fontSize: 15, fontWeight: 700, color: '#2C2416', fontVariantNumeric: 'tabular-nums' },
+  xpMiniBarWrap: { flex: 1, height: 5, background: '#E8E3D8', borderRadius: 3, overflow: 'hidden', minWidth: 80 },
+  xpMiniBarFill: { height: '100%', background: '#7D6340', borderRadius: 3, transition: 'width 0.4s ease' },
+  taskRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  rewardInputs: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 },
+  rewardLabel: { fontSize: 10, color: '#A89070', fontWeight: 600, whiteSpace: 'nowrap' },
+  rewardInput: { width: 54, padding: '9px 6px', fontSize: 12, border: '1px solid #DDD7CC', borderRadius: 6, outline: 'none', background: '#FAFAF7', color: '#2C2416', fontFamily: 'inherit', textAlign: 'center' },
+  removeBtn: { background: 'none', border: 'none', color: '#C8C2B6', fontSize: 13, cursor: 'pointer', padding: '0 4px', flexShrink: 0 },
+  addBtn: { marginTop: 8, background: 'none', border: '1px dashed #C8C2B6', color: '#8B7355', fontSize: 11, padding: '7px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
+  codeBox: { marginTop: 16, padding: '14px 16px', background: '#F5F2EA', border: '1px solid #E0D9CC', borderRadius: 6, textAlign: 'center' },
+  codeLabel: { fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#A89070', marginBottom: 6 },
+  codeValue: { fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 16, fontWeight: 700, color: '#2C2416', userSelect: 'all' },
+};

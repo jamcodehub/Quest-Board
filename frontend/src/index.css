@@ -1,47 +1,58 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    margin: 0;
-    background-color: #0f172a; /* Slate 900 */
-    color: #f8fafc; /* Slate 50 */
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    overflow-x: hidden;
-  }
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-/* Custom smooth scrollbar for quest lists and chat/dialogue boxes */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #FAFAF7;
+  color: #2C2416;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #1e293b; /* Slate 800 */
+  background: #F0EBE0;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #475569; /* Slate 600 */
-  border-radius: 4px;
+  background: #C8C2B6;
+  border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b; /* Slate 500 */
+  background: #A89070;
 }
 
-/* Custom utility or animation helpers if needed */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Focus ring */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid #7D6340;
+  outline-offset: 2px;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.25s ease-out forwards;
+/* Input hover */
+input:hover,
+textarea:hover {
+  border-color: #C8C2B6 !important;
+}
+input:focus,
+textarea:focus {
+  border-color: #7D6340 !important;
+  background: #FFFFFF !important;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeSlideIn 0.2s ease-out forwards;
 }
